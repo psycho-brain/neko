@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三毛猫クジ引き</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2canvas for exporting result image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --app-title-color: #ffffff;
+            --app-text-color: #a1a1aa;
+            --app-btn-color: #000000;
+            --app-btn-text-color: #ffffff;
+            --app-border-color: #27272a;
+        }
+
+        body {
+            background-color: #09090b;
+            color: var(--app-text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Minimal Invert Buttons */
+        .btn-draw-invert {
+            background-color: transparent;
+            color: var(--app-btn-text-color);
+            border: 1px solid var(--app-border-color);
+            transition: all 0.2s ease;
+        }
+
+        .btn-draw-invert:hover:not(:disabled) {
+            background-color: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+        }
+
+        .btn-draw-invert:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* Transparent Simple Dark Panels */
+        .glass-panel {
+            background: rgba(18, 18, 20, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Dynamic Custom Colors */
+        .custom-title-text {
+            color: var(--app-title-color);
+        }
+
+        .custom-border {
+            border-color: var(--app-border-color) !important;
+        }
+
+        /* Clean Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen px-4 py-6 max-w-2xl mx-auto space-y-6">
+
+    <!-- Minimal Header -->
+    <header class="flex justify-between items-center pb-4 border-b border-zinc-800/80">
+        <h1 id="appHeaderTitle" class="text-lg font-semibold tracking-tight custom-title-text flex items-center gap-2">
+            <i data-lucide="cat" class="w-5 h-5 text-amber-500"></i>
+            <span>三毛猫クジ引き</span>
+        </h1>
+
+        <!-- Minimal Navigation Tabs -->
+        <nav class="flex items-center gap-1 text-xs font-medium">
+            <button onclick="switchTab('draw')" id="tabBtn-draw" class="px-3 py-1.5 rounded-md transition text-white bg-zinc-800">
+                クジ引き
+            </button>
+            <button onclick="switchTab('history')" id="tabBtn-history" class="px-3 py-1.5 rounded-md transition text-zinc-400 hover:text-white">
+                履歴
+            </button>
+            <button onclick="switchTab('admin')" id="tabBtn-admin" class="px-3 py-1.5 rounded-md transition text-zinc-400 hover:text-white">
+                管理
+            </button>
+        </nav>
+    </header>
+
+    <!-- Notification Toast -->
+    <div id="toastMessage" class="hidden fixed top-4 right-4 z-50 bg-zinc-800 text-zinc-100 text-xs px-4 py-2.5 rounded-lg border border-zinc-700 shadow-lg">
+        <span id="toastText"></span>
+    </div>
+
+    <main class="flex-grow flex flex-col justify-center">
+
+        <!-- ==================== TAB 1: DRAW VIEW ==================== -->
+        <section id="view-draw" class="space-y-6">
+            <!-- App Description & Counter -->
+            <div class="text-center space-y-2">
+                <h2 id="appMainTitle" class="text-2xl font-bold custom-title-text tracking-wide">三毛猫クジ引き</h2>
+                <p id="appDescription" class="text-xs text-zinc-400 leading-relaxed max-w-md mx-auto">
+                    気まぐれな三毛猫が出没します。声をかけたり撫でたりしてクジを引いてみましょう。
+                </p>
+                <div class="text-[11px] text-zinc-500 pt-1">
+                    本日残りのクジ引き回数: <strong id="remainingDrawsCount" class="text-amber-400 font-semibold">1</strong> 回
+                </div>
+            </div>
+
+            <!-- Lottery Card Container -->
+            <div class="glass-panel p-6 rounded-xl border custom-border text-center flex flex-col items-center justify-center min-h-[300px]">
+                
+                <!-- State 0: Initial View -->
+                <div id="drawStateInitial" class="space-y-5 w-full max-w-xs">
+                    <button id="startLotteryBtn" onclick="startCatEvent()" class="btn-draw-invert w-full py-3.5 rounded-lg font-medium text-sm tracking-wide">
+                        クジを引く
+                    </button>
+                </div>
+
+                <!-- State 1: Cat Encounter -->
+                <div id="drawStateCat" class="hidden space-y-5 w-full max-w-xs">
+                    <div class="w-32 h-32 mx-auto rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900">
+                        <img id="catDisplayImage" src="" alt="三毛猫" class="w-full h-full object-cover">
+                    </div>
+                    <p class="text-xs font-medium text-zinc-300">三毛猫があらわれた。</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="handleCatChoice('声を掛ける')" class="py-2.5 px-3 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-xs text-zinc-200 border border-zinc-700 transition">
+                            声を掛ける
+                        </button>
+                        <button onclick="handleCatChoice('撫でる')" class="py-2.5 px-3 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-xs text-zinc-200 border border-zinc-700 transition">
+                            撫でる
+                        </button>
+                    </div>
+                </div>
+
+                <!-- State 2: Cat Reaction -->
+                <div id="drawStateReaction" class="hidden space-y-5 w-full max-w-xs">
+                    <div class="space-y-1">
+                        <span class="text-[10px] text-zinc-500 uppercase tracking-widest">Reaction</span>
+                        <h3 id="catReactionText" class="text-xl font-semibold text-white"></h3>
+                    </div>
+                    <button onclick="revealWinningItem()" class="btn-draw-invert py-2.5 px-6 rounded-lg text-xs font-medium">
+                        結果を見る
+                    </button>
+                </div>
+
+                <!-- State 3: Win Result Display -->
+                <div id="drawStateResult" class="hidden space-y-5 w-full max-w-xs">
+                    <div id="resultExportCard" class="bg-zinc-950 p-5 rounded-xl border border-zinc-800 text-center space-y-3">
+                        <div id="globalWinMessageDisplay" class="text-[11px] text-zinc-400"></div>
+                        
+                        <div id="wonItemImgContainer" class="hidden w-24 h-24 mx-auto rounded-lg overflow-hidden border border-zinc-800">
+                            <img id="wonItemImg" src="" alt="Won Item" class="w-full h-full object-cover">
+                        </div>
+
+                        <!-- Won Item Name Display Only -->
+                        <div id="wonItemTitle" class="text-xl font-bold text-amber-400 py-1">
+                            アイテム名
+                        </div>
+                        <div class="text-[10px] text-zinc-600 pt-1 border-t border-zinc-900" id="resultTimestamp"></div>
+                    </div>
+
+                    <!-- Export Action Buttons -->
+                    <div class="flex items-center justify-center gap-2">
+                        <button onclick="downloadResultText()" class="py-2 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] text-zinc-300 border border-zinc-700 transition">
+                            テキスト保存
+                        </button>
+                        <button onclick="downloadResultImage()" class="py-2 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] text-zinc-300 border border-zinc-700 transition">
+                            画像保存
+                        </button>
+                        <button onclick="resetDrawUI()" class="py-2 px-3 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-[11px] text-zinc-400 border border-zinc-800 transition">
+                            戻る
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: DRAW HISTORY ==================== -->
+        <section id="view-history" class="hidden space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-sm font-semibold custom-title-text">当選履歴</h2>
+                <span id="historyCountBadge" class="text-[11px] text-zinc-500">0 件</span>
+            </div>
+
+            <div class="glass-panel rounded-xl border custom-border overflow-hidden">
+                <table class="text-left text-xs">
+                    <thead>
+                        <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/40">
+                            <th class="py-2.5 px-4 font-normal">日時</th>
+                            <th class="py-2.5 px-4 font-normal">当選アイテム</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- Injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: ADMIN PANEL ==================== -->
+        <section id="view-admin" class="hidden space-y-5">
+            
+            <!-- Admin Password Verification Box -->
+            <div id="adminAuthBox" class="glass-panel p-6 rounded-xl border custom-border max-w-xs mx-auto text-center space-y-4">
+                <h2 class="text-sm font-semibold custom-title-text">管理者認証</h2>
+                <p class="text-[11px] text-zinc-500">パスワードを入力してください</p>
+                <input type="password" id="adminPasswordInput" placeholder="••••" class="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-center text-xs text-white focus:outline-none focus:border-zinc-600">
+                <button onclick="loginAdmin()" class="btn-draw-invert w-full py-2 rounded-lg text-xs font-medium">
+                    ログイン
+                </button>
+            </div>
+
+            <!-- Authenticated Admin Dashboard -->
+            <div id="adminDashboard" class="hidden space-y-5">
+                
+                <!-- Admin Header Toolbar -->
+                <div class="flex justify-between items-center text-xs pb-2 border-b border-zinc-800">
+                    <span class="text-zinc-400">管理者画面（管理者A / B）</span>
+                    <div class="flex gap-2">
+                        <button onclick="refreshAdminData()" class="px-2.5 py-1 bg-zinc-800 text-zinc-300 rounded border border-zinc-700 text-[11px]">更新</button>
+                        <button onclick="logoutAdmin()" class="px-2.5 py-1 bg-red-950/40 text-red-400 rounded border border-red-900/50 text-[11px]">ログアウト</button>
+                    </div>
+                </div>
+
+                <!-- Admin Settings Sections -->
+                <div class="space-y-4 text-xs">
+                    
+                    <!-- Basic Rules -->
+                    <div class="glass-panel p-4 rounded-xl border custom-border space-y-3">
+                        <h3 class="font-medium custom-title-text">基本設定</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-zinc-400 mb-1 text-[11px]">1日の制限回数</label>
+                                <div class="flex gap-2">
+                                    <input type="number" id="cfgDailyLimit" min="1" class="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-white">
+                                    <button onclick="saveDailyLimit()" class="px-3 bg-zinc-800 text-zinc-200 rounded border border-zinc-700">保存</button>
+                                </div>
+                            </div>
+                            <div>
+                                <button onclick="resetUserDrawCount()" class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded border border-zinc-700 text-[11px]">
+                                    本日の実行回数をリセット
+                                </button>
+                            </div>
+                            <div>
+                                <label class="block text-zinc-400 mb-1 text-[11px]">当選メッセージ</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="cfgWinMessage" class="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-white">
+                                    <button onclick="saveWinMessage()" class="px-3 bg-zinc-800 text-zinc-200 rounded border border-zinc-700">保存</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Design Options -->
+                    <div class="glass-panel p-4 rounded-xl border custom-border space-y-3">
+                        <h3 class="font-medium custom-title-text">デザイン設定</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-zinc-400 mb-1 text-[11px]">アプリタイトル</label>
+                                <input type="text" id="cfgAppTitle" class="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-white">
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-zinc-400 mb-1 text-[11px]">文字色</label>
+                                    <input type="color" id="cfgTextColor" class="w-full h-7 bg-zinc-900 border border-zinc-800 rounded cursor-pointer">
+                                </div>
+                                <div>
+                                    <label class="block text-zinc-400 mb-1 text-[11px]">ボタン色</label>
+                                    <input type="color" id="cfgBtnColor" class="w-full h-7 bg-zinc-900 border border-zinc-800 rounded cursor-pointer">
+                                </div>
+                                <div>
+                                    <label class="block text-zinc-400 mb-1 text-[11px]">枠線色</label>
+                                    <input type="color" id="cfgBorderColor" class="w-full h-7 bg-zinc-900 border border-zinc-800 rounded cursor-pointer">
+                                </div>
+                            </div>
+                            <button onclick="saveDesignConfig()" class="w-full py-1.5 bg-zinc-800 text-zinc-200 rounded border border-zinc-700 text-[11px]">
+                                デザイン設定を保存
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cat Image Config -->
+                    <div class="glass-panel p-4 rounded-xl border custom-border space-y-3">
+                        <h3 class="font-medium custom-title-text">三毛猫画像</h3>
+                        <div class="flex items-center gap-3">
+                            <img id="adminCatPreview" src="" alt="Cat" class="w-10 h-10 rounded object-cover border border-zinc-800 bg-zinc-900">
+                            <input type="file" id="catImgUpload" accept="image/*" class="text-[11px] text-zinc-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[11px] file:bg-zinc-800 file:text-zinc-200">
+                        </div>
+                    </div>
+
+                    <!-- Item Management Section -->
+                    <div class="glass-panel p-4 rounded-xl border custom-border space-y-4">
+                        <h3 class="font-medium custom-title-text">クジ引きアイテム管理</h3>
+
+                        <!-- Add Item Form -->
+                        <form onsubmit="handleAddNewItem(event)" class="space-y-2 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" id="newItemName" required placeholder="アイテム名" class="bg-zinc-900 border border-zinc-800 rounded p-1.5 text-white">
+                                <input type="number" id="newItemQty" required min="1" value="5" placeholder="個数" class="bg-zinc-900 border border-zinc-800 rounded p-1.5 text-white">
+                            </div>
+                            <div class="flex justify-between items-center gap-2">
+                                <input type="file" id="newItemImg" accept="image/*" class="text-[11px] text-zinc-400">
+                                <button type="submit" class="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded border border-amber-500/40 font-medium whitespace-nowrap">
+                                    追加
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Batch Add Input -->
+                        <div class="space-y-2 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800">
+                            <label class="block text-zinc-400 text-[11px]">一括追加 (アイテム名,個数)</label>
+                            <textarea id="batchItemInput" rows="2" placeholder="缶詰,10&#10;ねこじゃらし,5" class="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-white font-mono text-[11px]"></textarea>
+                            <button onclick="handleBatchAddItems()" class="px-3 py-1 bg-zinc-800 text-zinc-200 rounded border border-zinc-700 text-[11px]">
+                                一括登録
+                            </button>
+                        </div>
+
+                        <!-- Item Inventory List Table -->
+                        <div class="overflow-x-auto">
+                            <table>
+                                <thead>
+                                    <tr class="text-zinc-500 bg-zinc-900/60 border-b border-zinc-800">
+                                        <th class="py-2 px-2 font-normal">画像</th>
+                                        <th class="py-2 px-2 font-normal">アイテム名</th>
+                                        <th class="py-2 px-2 font-normal">個数</th>
+                                        <th class="py-2 px-2 font-normal text-right">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminItemTableBody">
+                                    <!-- Injected by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Default SVG Image
+        const DEFAULT_CAT_SVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><rect width='200' height='200' fill='%2318181b'/><path d='M50,150 C30,120 30,80 60,50 C90,20 140,20 160,60 C180,100 160,150 130,170 C100,190 70,170 50,150 Z' fill='%23f97316'/><circle cx='80' cy='80' r='12' fill='%23ffffff'/><circle cx='130' cy='80' r='10' fill='%2309090b'/><circle cx='80' cy='80' r='5' fill='%23000000'/><polygon points='105,95 95,105 115,105' fill='%23f43f5e'/></svg>";
+
+        // Default Initial Data
+        const DEFAULT_STATE = {
+            config: {
+                appTitle: "三毛猫クジ引き",
+                description: "気まぐれな三毛猫が出没します。声をかけたり撫でたりしてクジを引いてみましょう。",
+                dailyLimit: 1,
+                globalWinMessage: "おめでとうございます！以下のアイテムを獲得しました。",
+                textColor: "#a1a1aa",
+                btnColor: "#000000",
+                borderColor: "#27272a",
+                catImage: DEFAULT_CAT_SVG
+            },
+            items: [
+                { id: "1", name: "高級プレミアム缶詰", qty: 5, img: "" },
+                { id: "2", name: "手作りネコジャラシ", qty: 10, img: "" },
+                { id: "3", name: "極上またたびパウダー", qty: 3, img: "" }
+            ],
+            history: [],
+            userState: {
+                lastDrawDate: "",
+                drawCountToday: 0
+            },
+            adminLoggedIn: false
+        };
+
+        let appState = JSON.parse(localStorage.getItem('calico_lottery_app_data')) || DEFAULT_STATE;
+        let currentWonItem = null;
+
+        // Initialize App
+        window.onload = function() {
+            lucide.createIcons();
+            checkMidnightReset();
+            applyDesignConfig();
+            renderUI();
+            setupImageUploadListeners();
+        };
+
+        // Check & Auto Reset Inventory/Daily Count at Midnight 00:00
+        function checkMidnightReset() {
+            const today = new Date().toISOString().split('T')[0];
+            if (appState.userState.lastDrawDate !== today) {
+                appState.userState.lastDrawDate = today;
+                appState.userState.drawCountToday = 0;
+                saveAppState();
+            }
+        }
+
+        // Save State
+        function saveAppState() {
+            localStorage.setItem('calico_lottery_app_data', JSON.stringify(appState));
+        }
+
+        // Switch Navigation Tabs
+        function switchTab(tabName) {
+            document.getElementById('view-draw').classList.add('hidden');
+            document.getElementById('view-history').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
+
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.className = "px-3 py-1.5 rounded-md transition text-zinc-400 hover:text-white";
+            });
+
+            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tabBtn-${tabName}`);
+            activeBtn.className = "px-3 py-1.5 rounded-md transition text-white bg-zinc-800";
+
+            if (tabName === 'history') renderHistoryTable();
+            if (tabName === 'admin') renderAdminView();
+        }
+
+        // Apply Design Configuration
+        function applyDesignConfig() {
+            const cfg = appState.config;
+            document.documentElement.style.setProperty('--app-text-color', cfg.textColor);
+            document.documentElement.style.setProperty('--app-btn-color', cfg.btnColor);
+            document.documentElement.style.setProperty('--app-border-color', cfg.borderColor);
+
+            document.getElementById('appHeaderTitle').querySelector('span').textContent = cfg.appTitle;
+            document.getElementById('appMainTitle').textContent = cfg.appTitle;
+            document.getElementById('appDescription').textContent = cfg.description;
+        }
+
+        // Render Base UI
+        function renderUI() {
+            const limit = appState.config.dailyLimit;
+            const current = appState.userState.drawCountToday;
+            const remaining = Math.max(0, limit - current);
+            
+            document.getElementById('remainingDrawsCount').textContent = remaining;
+            const drawBtn = document.getElementById('startLotteryBtn');
+            drawBtn.disabled = remaining <= 0;
+            if (remaining <= 0) {
+                drawBtn.textContent = "本日のクジ引き終了";
+            } else {
+                drawBtn.textContent = "クジを引く";
+            }
+        }
+
+        // Lottery Game Flow
+        function startCatEvent() {
+            checkMidnightReset();
+            const limit = appState.config.dailyLimit;
+            if (appState.userState.drawCountToday >= limit) {
+                showToast("本日の上限に達しています");
+                return;
+            }
+
+            const availableItems = appState.items.filter(i => i.qty > 0);
+            if (availableItems.length === 0) {
+                showToast("現在アイテムの在庫がありません");
+                return;
+            }
+
+            document.getElementById('drawStateInitial').classList.add('hidden');
+            document.getElementById('drawStateCat').classList.remove('hidden');
+            document.getElementById('catDisplayImage').src = appState.config.catImage || DEFAULT_CAT_SVG;
+        }
+
+        function handleCatChoice(choice) {
+            const reactions = [
+                "シャーされた",
+                "嚙まれた",
+                "尻尾ピンピンされた",
+                "逃げられた",
+                "ゴロゴロ喉を鳴らした"
+            ];
+            const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+            
+            document.getElementById('catReactionText').textContent = `「${randomReaction}」`;
+            document.getElementById('drawStateCat').classList.add('hidden');
+            document.getElementById('drawStateReaction').classList.remove('hidden');
+        }
+
+        function revealWinningItem() {
+            const availableItems = appState.items.filter(i => i.qty > 0);
+            if (availableItems.length === 0) {
+                showToast("在庫がありません");
+                resetDrawUI();
+                return;
+            }
+
+            const won = availableItems[Math.floor(Math.random() * availableItems.length)];
+            won.qty -= 1;
+            appState.userState.drawCountToday += 1;
+            
+            const historyEntry = {
+                id: Date.now().toString(),
+                itemName: won.name,
+                timestamp: new Date().toLocaleString('ja-JP')
+            };
+            appState.history.unshift(historyEntry);
+            saveAppState();
+
+            currentWonItem = won;
+
+            document.getElementById('globalWinMessageDisplay').textContent = appState.config.globalWinMessage;
+            document.getElementById('wonItemTitle').textContent = won.name;
+            document.getElementById('resultTimestamp').textContent = historyEntry.timestamp;
+
+            const imgContainer = document.getElementById('wonItemImgContainer');
+            if (won.img) {
+                document.getElementById('wonItemImg').src = won.img;
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+
+            document.getElementById('drawStateReaction').classList.add('hidden');
+            document.getElementById('drawStateResult').classList.remove('hidden');
+            renderUI();
+        }
+
+        function resetDrawUI() {
+            document.getElementById('drawStateResult').classList.add('hidden');
+            document.getElementById('drawStateReaction').classList.add('hidden');
+            document.getElementById('drawStateCat').classList.add('hidden');
+            document.getElementById('drawStateInitial').classList.remove('hidden');
+            renderUI();
+        }
+
+        // Export Functions
+        function downloadResultText() {
+            if (!currentWonItem) return;
+            const text = `【当選証明】\nアイテム: ${currentWonItem.name}\n日時: ${new Date().toLocaleString('ja-JP')}\n三毛猫クジ引き`;
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `result_${Date.now()}.txt`;
+            link.click();
+        }
+
+        function downloadResultImage() {
+            const card = document.getElementById('resultExportCard');
+            html2canvas(card, { backgroundColor: '#09090b' }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `result_${Date.now()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        // History View Render
+        function renderHistoryTable() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            document.getElementById('historyCountBadge').textContent = `${appState.history.length} 件`;
+
+            if (appState.history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-zinc-600 text-xs">履歴がありません</td></tr>`;
+                return;
+            }
+
+            appState.history.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2.5 px-4 text-zinc-500 text-[11px]">${item.timestamp}</td>
+                    <td class="py-2.5 px-4 text-amber-400 font-medium text-xs">${escapeHtml(item.itemName)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Admin Login & Actions
+        function loginAdmin() {
+            const input = document.getElementById('adminPasswordInput').value;
+            if (input === 'days') {
+                appState.adminLoggedIn = true;
+                saveAppState();
+                renderAdminView();
+                showToast("管理者ログインしました");
+            } else {
+                showToast("パスワードが違います");
+            }
+            document.getElementById('adminPasswordInput').value = '';
+        }
+
+        function logoutAdmin() {
+            appState.adminLoggedIn = false;
+            saveAppState();
+            renderAdminView();
+        }
+
+        function refreshAdminData() {
+            renderAdminView();
+            showToast("データを更新しました");
+        }
+
+        function renderAdminView() {
+            if (!appState.adminLoggedIn) {
+                document.getElementById('adminAuthBox').classList.remove('hidden');
+                document.getElementById('adminDashboard').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('adminAuthBox').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+
+            document.getElementById('cfgDailyLimit').value = appState.config.dailyLimit;
+            document.getElementById('cfgWinMessage').value = appState.config.globalWinMessage;
+            document.getElementById('cfgAppTitle').value = appState.config.appTitle;
+            document.getElementById('cfgTextColor').value = appState.config.textColor;
+            document.getElementById('cfgBtnColor').value = appState.config.btnColor;
+            document.getElementById('cfgBorderColor').value = appState.config.borderColor;
+            document.getElementById('adminCatPreview').src = appState.config.catImage || DEFAULT_CAT_SVG;
+
+            renderAdminItemTable();
+        }
+
+        function saveDailyLimit() {
+            const limit = parseInt(document.getElementById('cfgDailyLimit').value);
+            if (limit > 0) {
+                appState.config.dailyLimit = limit;
+                saveAppState();
+                renderUI();
+                showToast("制限回数を保存しました");
+            }
+        }
+
+        function resetUserDrawCount() {
+            appState.userState.drawCountToday = 0;
+            saveAppState();
+            renderUI();
+            showToast("実行回数をリセットしました");
+        }
+
+        function saveWinMessage() {
+            appState.config.globalWinMessage = document.getElementById('cfgWinMessage').value;
+            saveAppState();
+            showToast("メッセージを保存しました");
+        }
+
+        function saveDesignConfig() {
+            appState.config.appTitle = document.getElementById('cfgAppTitle').value;
+            appState.config.textColor = document.getElementById('cfgTextColor').value;
+            appState.config.btnColor = document.getElementById('cfgBtnColor').value;
+            appState.config.borderColor = document.getElementById('cfgBorderColor').value;
+            saveAppState();
+            applyDesignConfig();
+            showToast("デザイン設定を保存しました");
+        }
+
+        // Image Listeners
+        function setupImageUploadListeners() {
+            document.getElementById('catImgUpload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        appState.config.catImage = evt.target.result;
+                        document.getElementById('adminCatPreview').src = evt.target.result;
+                        saveAppState();
+                        showToast("三毛猫画像を更新しました");
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // Item Add / Delete / Modify
+        function handleAddNewItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('newItemName').value;
+            const qty = parseInt(document.getElementById('newItemQty').value);
+            const imgFile = document.getElementById('newItemImg').files[0];
+
+            if (imgFile) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    addItemToState(name, qty, evt.target.result);
+                };
+                reader.readAsDataURL(imgFile);
+            } else {
+                addItemToState(name, qty, "");
+            }
+        }
+
+        function addItemToState(name, qty, imgData) {
+            const newItem = {
+                id: Date.now().toString(),
+                name: name,
+                qty: qty,
+                img: imgData
+            };
+            appState.items.push(newItem);
+            saveAppState();
+            renderAdminItemTable();
+            
+            document.getElementById('newItemName').value = '';
+            document.getElementById('newItemQty').value = '5';
+            document.getElementById('newItemImg').value = '';
+            showToast("アイテムを追加しました");
+        }
+
+        function handleBatchAddItems() {
+            const rawText = document.getElementById('batchItemInput').value;
+            const lines = rawText.split('\n');
+            let addedCount = 0;
+
+            lines.forEach(line => {
+                const parts = line.split(',');
+                if (parts.length >= 1 && parts[0].trim() !== '') {
+                    const name = parts[0].trim();
+                    const qty = parts[1] ? parseInt(parts[1].trim()) || 1 : 1;
+                    appState.items.push({
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                        name: name,
+                        qty: qty,
+                        img: ""
+                    });
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                saveAppState();
+                renderAdminItemTable();
+                document.getElementById('batchItemInput').value = '';
+                showToast(`${addedCount}個一括追加しました`);
+            }
+        }
+
+        function updateItemQty(id, delta) {
+            const item = appState.items.find(i => i.id === id);
+            if (item) {
+                item.qty = Math.max(0, item.qty + delta);
+                saveAppState();
+                renderAdminItemTable();
+            }
+        }
+
+        function updateItemName(id, newName) {
+            const item = appState.items.find(i => i.id === id);
+            if (item) {
+                item.name = newName;
+                saveAppState();
+            }
+        }
+
+        function deleteItem(id) {
+            appState.items = appState.items.filter(i => i.id !== id);
+            saveAppState();
+            renderAdminItemTable();
+            showToast("削除しました");
+        }
+
+        function renderAdminItemTable() {
+            const tbody = document.getElementById('adminItemTableBody');
+            tbody.innerHTML = '';
+
+            if (appState.items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-3 text-center text-zinc-600">アイテムなし</td></tr>`;
+                return;
+            }
+
+            appState.items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2 px-2">
+                        <div class="w-6 h-6 rounded bg-zinc-900 border border-zinc-800 overflow-hidden flex items-center justify-center">
+                            ${item.img ? `<img src="${item.img}" class="w-full h-full object-cover">` : `<i data-lucide="package" class="w-3 h-3 text-zinc-600"></i>`}
+                        </div>
+                    </td>
+                    <td class="py-2 px-2">
+                        <input type="text" value="${escapeHtml(item.name)}" onchange="updateItemName('${item.id}', this.value)" class="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 text-zinc-200 text-xs w-full">
+                    </td>
+                    <td class="py-2 px-2">
+                        <div class="flex items-center gap-1">
+                            <button onclick="updateItemQty('${item.id}', -1)" class="px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-300">-</button>
+                            <span class="w-6 text-center text-xs font-semibold ${item.qty === 0 ? 'text-red-400' : 'text-amber-400'}">${item.qty}</span>
+                            <button onclick="updateItemQty('${item.id}', 1)" class="px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-300">+</button>
+                        </div>
+                    </td>
+                    <td class="py-2 px-2 text-right">
+                        <button onclick="deleteItem('${item.id}')" class="p-1 bg-red-950/40 text-red-400 rounded border border-red-900/50">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        // Utility: Toast Messenger
+        function showToast(msg) {
+            const toast = document.getElementById('toastMessage');
+            document.getElementById('toastText').textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2500);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+    </script>
+</body>
+</html>
