@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+　　　<meta http-equiv="Pragma" content="no-cache">
+　　　<meta http-equiv="Expires" content="0">
     <title>三毛猫クジ引き</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -78,7 +81,7 @@
     <header class="flex justify-between items-center pb-4 border-b border-zinc-800/80">
         <h1 id="appHeaderTitle" class="text-lg font-semibold tracking-tight custom-title-text flex items-center gap-2">
             <i data-lucide="cat" class="w-5 h-5 text-amber-500"></i>
-            <span>三毛猫クジ引き</span>
+            <span>三毛猫と遊ぶ</span>
         </h1>
 
         <!-- Minimal Navigation Tabs -->
@@ -111,7 +114,7 @@
                     気まぐれな三毛猫が出没します。声をかけたり撫でたりしてクジを引いてみましょう。
                 </p>
                 <div class="text-[11px] text-zinc-500 pt-1">
-                    本日残りのクジ引き回数: <strong id="remainingDrawsCount" class="text-amber-400 font-semibold">1</strong> 回
+                    本日の遊べる回数: <strong id="remainingDrawsCount" class="text-amber-400 font-semibold">1</strong> 回
                 </div>
             </div>
 
@@ -357,7 +360,7 @@
         // Default Initial Data
         const DEFAULT_STATE = {
             config: {
-                appTitle: "三毛猫クジ引き",
+                appTitle: "三毛猫と遊ぼう",
                 description: "気まぐれな三毛猫が出没します。声をかけたり撫でたりしてクジを引いてみましょう。",
                 dailyLimit: 1,
                 globalWinMessage: "おめでとうございます！以下のアイテムを獲得しました。",
@@ -368,8 +371,21 @@
             },
             items: [
                 { id: "1", name: "高級プレミアム缶詰", qty: 5, img: "" },
-                { id: "2", name: "手作りネコジャラシ", qty: 10, img: "" },
-                { id: "3", name: "極上またたびパウダー", qty: 3, img: "" }
+                { id: "2", name: "壊れたネコジャラシ", qty: 10, img: "" },
+                { id: "3", name: "ダンボールのあけた切れ端", qty: 10, img: "" },
+                { id: "4", name: "魚のほね", qty: 10, img: "" },
+                { id: "5", name: "猫の手紙1", qty: 3, img: "" },
+                { id: "6", name: "猫のメモ", qty: 10, img: "" },
+                { id: "7", name: "新品の煙草", qty: 10, img: "" },
+                { id: "8", name: "お寿司", qty: 10, img: "" },
+                { id: "9", name: "ペットボトルお茶", qty: 10, img: "" },
+                { id: "10", name: "猫のヒゲ", qty: 3, img: "" },
+                { id: "11", name: "すなっくフラミンゴのカレーチケット", qty: 7, img: "" },
+                { id: "12", name: "猫印のチューハイ", qty: 3, img: "" },
+                { id: "13", name: "猫の手紙2", qty: 3, img: "" },
+                { id: "14", name: "猫の手紙3", qty: 3, img: "" },
+                { id: "15", name: "猫のお宝", qty: 3, img: "" },
+                { id: "16", name: "はずれ", qty: 17, img: "" },
             ],
             history: [],
             userState: {
